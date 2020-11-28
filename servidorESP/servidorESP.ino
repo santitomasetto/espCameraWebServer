@@ -1,4 +1,7 @@
 #include <WiFi.h>
+#include "esp_http_server.h"
+#include "esp_timer.h"
+#include "esp_camera.h"
 
 //-----------------definicion de pines-----------------
 #define PWDN_GPIO_NUM     32
@@ -22,6 +25,18 @@
 //configuracion wifi
 const char* ssid = "Fibertel WiFi035 2.4GHz";
 const char* password = "0043880052";
+
+static esp_err_t index_handler(httpd_req_t *req){
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    return httpd_resp_send(req, (const char *)index_html, index_html_len);
+}
+
+static esp_err_t stream_handler(httpd_req_t *req){
+}
+
+static esp_err_t capture_handler(httpd_req_t *req){
+}
 
 void iniciarServidor() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -47,6 +62,18 @@ void iniciarServidor() {
     .user_ctx  = NULL
   };
 
+
+  Serial.printf("Starting web server on port: '%d'\n", config.server_port);
+    if (httpd_start(&camera_httpd, &config) == ESP_OK) {
+        httpd_register_uri_handler(camera_httpd, &index_uri);
+        httpd_register_uri_handler(camera_httpd, &capture_uri);
+    }
+
+    config.server_port += 1;
+    Serial.printf("Starting stream server on port: '%d'\n", config.server_port);
+    if (httpd_start(&stream_httpd, &config) == ESP_OK) {
+        httpd_register_uri_handler(stream_httpd, &stream_uri);
+    }
 }
 
 void setup() {
@@ -99,6 +126,5 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
+  delay(10000);
 }
