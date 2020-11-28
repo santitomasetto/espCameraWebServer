@@ -2,6 +2,8 @@
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include "esp_camera.h"
+#include "serverIndex.h"
+
 
 //-----------------definicion de pines-----------------
 #define PWDN_GPIO_NUM     32
@@ -22,6 +24,9 @@
 #define PCLK_GPIO_NUM     22
 //----------------------------------------------------
 
+httpd_handle_t stream_httpd = NULL;
+httpd_handle_t camera_httpd = NULL;
+
 //configuracion wifi
 const char* ssid = "Fibertel WiFi035 2.4GHz";
 const char* password = "0043880052";
@@ -33,9 +38,11 @@ static esp_err_t index_handler(httpd_req_t *req){
 }
 
 static esp_err_t stream_handler(httpd_req_t *req){
+  Serial.println("funcion de stream");
 }
 
 static esp_err_t capture_handler(httpd_req_t *req){
+  Serial.println("funcion de captura");
 }
 
 void iniciarServidor() {
