@@ -5,6 +5,9 @@
 #include "serverIndex.h"
 #include "img_converters.h"
 #include "Arduino.h"
+#include "FS.h"
+#include "SD_MMC.h"
+#include <EEPROM.h>
 
 //-----------------definicion de pines-----------------
 #define PWDN_GPIO_NUM     32
@@ -25,10 +28,11 @@
 #define PCLK_GPIO_NUM     22
 //----------------------------------------------------
 
+#define EEPROM_SIZE 2
+
+
 httpd_handle_t stream_httpd = NULL;
 httpd_handle_t camera_httpd = NULL;
-
-unsigned long frameTime, sleepTime;
 
 #define PART_BOUNDARY "123456789000000000000987654321"
 
@@ -47,7 +51,6 @@ static esp_err_t index_handler(httpd_req_t *req) {
 }
 
 static esp_err_t stream_handler(httpd_req_t *req) {
-  frameTime = millis();
   camera_fb_t * fb = NULL;
   esp_err_t res = ESP_OK;
   size_t _jpg_buf_len = 0;
@@ -61,7 +64,7 @@ static esp_err_t stream_handler(httpd_req_t *req) {
   while (true) {
     fb = esp_camera_fb_get();
     if (!fb) {
-      Serial.println("Camera capture failed");
+      Serial.println("Fallo captura de camara");
       res = ESP_FAIL;
     } else {
       if (fb->width > 400) {
@@ -70,7 +73,7 @@ static esp_err_t stream_handler(httpd_req_t *req) {
           esp_camera_fb_return(fb);
           fb = NULL;
           if (!jpeg_converted) {
-            Serial.println("JPEG compression failed");
+            Serial.println("Fallo conversion JPEG");
             res = ESP_FAIL;
           }
         } else {
@@ -100,15 +103,50 @@ static esp_err_t stream_handler(httpd_req_t *req) {
     if (res != ESP_OK) {
       break;
     }
-    Serial.print("tiempo desde el ultimo frame: ");
-    Serial.println(millis() - frameTime);
-    frameTime = millis();
   }
   return res;
 }
 
 static esp_err_t capture_handler(httpd_req_t *req) {
-  Serial.println("funcion de captura");
+  camera_fb_t * fb = NULL;
+  esp_err_t res = ESP_OK;
+  int numeroFoto = EEPROM.read(0) + 1;
+  String path = "/picture" + String(numeroFoto) + ".jpg";
+
+  fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Camera capture failed");
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
+
+  /*
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    size_t out_len, out_width, out_height;
+    uint8_t * out_buf;*/
+  if (fb->width > 400) {
+    if (fb->format == PIXFORMAT_JPEG) {
+      fs::FS &fs = SD_MMC;
+      File file = fs.open(path.c_str(), FILE_WRITE);
+      if (!file) {
+        Serial.println("Fallo al abrir el archivo en modo de escritura");
+      }
+      else {
+        file.write(fb->buf, fb->len); // payload (image), payload length
+        Serial.printf("foto guardada: %s\n", path.c_str());
+        EEPROM.write(0, numeroFoto);
+        EEPROM.commit();
+      }
+      file.close();
+    } else {
+      Serial.println("imagen en formato no deseado");
+    }
+    esp_camera_fb_return(fb);
+    return res;
+  }
 }
 
 static esp_err_t sleep_handler(httpd_req_t *req) {
@@ -164,7 +202,6 @@ void iniciarServidor() {
 }
 
 void setup() {
-  sleepTime = millis();
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
@@ -194,17 +231,33 @@ void setup() {
   config.xclk_freq_hz = 10000000;
   config.pixel_format = PIXFORMAT_JPEG;
   config.frame_size = FRAMESIZE_SVGA;
-  config.jpeg_quality = 12;
-  config.fb_count = 1;
+  config.jpeg_quality = 10;
+  config.fb_count = 2;
   //fin seteo de pines y configuracion inicial
 
+  //inicializamos la camara
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
     return;
   }
 
+  //inicializamos interrupcion de wakeup en el pin 13
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1);
+
+  //inicializamos microSD
+  if (!SD_MMC.begin()) {
+    Serial.println("SD Card Mount Failed");
+    return;
+  }
+
+  uint8_t cardType = SD_MMC.cardType();
+  if (cardType == CARD_NONE) {
+    Serial.println("No SD Card attached");
+    return;
+  }
+  //inicializamos la eeprom desde tomaremos el numero de imagen a guardar
+  EEPROM.begin(EEPROM_SIZE);
 
   //seteo wifi
   WiFi.begin(ssid, password);
@@ -221,8 +274,6 @@ void setup() {
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
-  Serial.print("tiempo en levantar servidor: ");
-  Serial.println(millis() - sleepTime);
 }
 
 void loop() {
