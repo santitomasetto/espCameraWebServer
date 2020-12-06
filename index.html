@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>ESP32 server</title>
+    </head>
+    <body>
+        <section class="main">
+            <div id="content">
+			    <div id="sidebar">
+                    <figure>
+                        <div id="stream-container" class="image-container hidden">
+                            <div class="close" id="close-stream">x</div>
+                            <img id="stream" src="">
+                        </div>
+                    </figure>
+					<div id="sidebar">
+				      <section id="buttons">
+                          <button id="get-still">Capturar</button>
+                          <button id="toggle-stream">Stream</button>
+						  <button id="sleep">Dormir</button>
+                      </section>
+					</div>
+			    </div>
+            </div>
+        </section>
+        <script>
+document.addEventListener('DOMContentLoaded', function (event) {
+  var baseHost = document.location.origin
+  var streamUrl = baseHost + ':81'
+  
+  document
+    .querySelectorAll('.close')
+    .forEach(el => {
+      el.onclick = () => {
+        hide(el.parentNode)
+      }
+    })
+
+  const view = document.getElementById('stream')
+  const viewContainer = document.getElementById('stream-container')
+  const stillButton = document.getElementById('get-still')
+  const streamButton = document.getElementById('toggle-stream')
+  const closeButton = document.getElementById('close-stream')
+  const sleepButton = document.getElementById('sleep')
+
+  const stopStream = () => {
+    window.stop();
+    streamButton.innerHTML = 'Start Stream'
+  }
+
+  const startStream = () => {
+    view.src = `${streamUrl}/stream`
+    show(viewContainer)
+    streamButton.innerHTML = 'Stop Stream'
+  }
+
+  // Attach actions to buttons
+  stillButton.onclick = () => {
+    stopStream()
+    view.src = `${baseHost}/capture?_cb=${Date.now()}`
+    show(viewContainer)
+  }
+
+  sleepButton.onclick = () => {
+    stopStream()
+    view.src = `${baseHost}/sleep`
+    hide(viewContainer)
+  }
+
+  closeButton.onclick = () => {
+    stopStream()
+    hide(viewContainer)
+  }
+
+  streamButton.onclick = () => {
+    const streamEnabled = streamButton.innerHTML === 'Stop Stream'
+    if (streamEnabled) {
+      stopStream()
+    } else {
+      startStream()
+    }
+  }
+  })
+      </script>
+    </body>
+</html>
