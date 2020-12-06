@@ -41,8 +41,8 @@ static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
 static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
 //configuracion wifi
-const char* ssid = "Fibertel WiFi035 2.4GHz";
-const char* password = "0043880052";
+const char* ssid = "taller de proyecto 2";
+const char* password = "esp32cam";
 
 static esp_err_t index_handler(httpd_req_t *req) {
   httpd_resp_set_type(req, "text/html");
@@ -261,19 +261,19 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
 
   //seteo wifi
-  WiFi.begin(ssid, password);
-
+  WiFi.softAP(ssid, password);
+/*
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("");
-  Serial.println("WiFi connected");
+  Serial.println("WiFi connected");*/
 
   iniciarServidor();
 
   Serial.print("Camera Ready! Use 'http://");
-  Serial.print(WiFi.localIP());
+  Serial.print(WiFi.softAPIP());
   Serial.println("' to connect");
 }
 
