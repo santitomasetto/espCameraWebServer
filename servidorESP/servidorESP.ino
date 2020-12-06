@@ -243,7 +243,8 @@ void setup() {
   }
 
   //inicializamos interrupcion de wakeup en el pin 13
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, 1);
+ 
 
   //inicializamos microSD
   if (!SD_MMC.begin()) {
