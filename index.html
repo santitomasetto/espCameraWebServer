@@ -91,9 +91,17 @@ document.addEventListener('DOMContentLoaded', function (event) {
   }
 
   // Attach actions to buttons
+  streamButton.onclick = () => {
+    const streamEnabled = streamButton.innerHTML === 'Stop Stream'
+    if (streamEnabled) {
+      stopStream()
+    } else {
+      startStream()
+    }
+  }
+  
   stillButton.onclick = () => {
     view.src = `${baseHost}/capture?_cb=${Date.now()}`
-    show(viewContainer)
   }
 
   sleepButton.onclick = () => {
@@ -107,14 +115,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
 	hide(viewContainer)
   }
 
-  streamButton.onclick = () => {
-    const streamEnabled = streamButton.innerHTML === 'Stop Stream'
-    if (streamEnabled) {
-      stopStream()
-    } else {
-      startStream()
-    }
-  }
   })
       </script>
     </body>

@@ -119,14 +119,6 @@ static esp_err_t capture_handler(httpd_req_t *req) {
     httpd_resp_send_500(req);
     return ESP_FAIL;
   }
-
-  /*
-    httpd_resp_set_type(req, "image/jpeg");
-    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-
-    size_t out_len, out_width, out_height;
-    uint8_t * out_buf;*/
   if (fb->width > 400) {
     if (fb->format == PIXFORMAT_JPEG) {
       fs::FS &fs = SD_MMC;
@@ -262,13 +254,6 @@ void setup() {
 
   //seteo wifi
   WiFi.softAP(ssid, password);
-/*
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");*/
 
   iniciarServidor();
 
